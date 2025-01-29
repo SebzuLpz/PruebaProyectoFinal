@@ -1,0 +1,162 @@
+<!--index.html -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+    <link href="./styles.css" rel="stylesheet">
+    <link rel="shortcut icon" href="./images/Ritmichell.png">
+    <title>Sistema de inventarios</title>
+    </head>
+    <body>
+    <div id="notification-container" class="notification-container"></div>
+    <div id="login-container" class="container">
+        <form class="login-form">
+            <img src="./images/Ritmichell.png" alt="Logo" class="logo">
+            <h2>LOGIN</h2>
+            <div class="form-group">
+                <label for="username">Usuario:</label>
+                <input type="text" id="username" class="form-control" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" class="form-control" autocomplete="current-password">
+            </div>
+            <button type="button" id="login-btn" class="btn-primary">Iniciar Sesión</button>
+        </form>
+        <center><div id="error-message" class="error-message hidden"></div></center>
+    </div>
+
+    <div id="main-container" class="container hidden">
+        <div class="menu-bar">
+            <div class="left-menu">
+                <button id="add-product-btn" class="btn-primary hidden">Agregar Producto</button>
+                <button id="update-stock-btn" class="btn-primary">Actualizar Stock</button>
+            </div>
+            <button id="logout-btn" class="btn-secondary">Cerrar Sesión</button>
+        </div>
+
+        <div class="filters">
+            <select id="filter-colegio" class="form-control">
+                <option value="">Seleccionar Colegio</option>
+            </select>
+            <select id="filter-tipo" class="form-control">
+                <option value="">Seleccionar Tipo</option>
+                <option value="Uniforme Diario">Uniforme Diario</option>
+                <option value="Uniforme Deportivo">Uniforme Deportivo</option>
+            </select>
+            <select id="filter-prenda" class="form-control">
+                <option value="">Seleccionar Prenda</option>
+            </select>
+            <select id="filter-talla" class="form-control">
+                <option value="">Seleccionar Talla</option>
+            </select>
+        </div>
+
+        <div class="products-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Colegio</th>
+                        <th>Tipo Uniforme</th>
+                        <th>Prenda</th>
+                        <th>Talla</th>
+                        <th>Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody id="products-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal templates -->
+    <div id="add-product-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Agregar Nuevo Producto</h2>
+            <div class="form-group">
+                <label>Colegio:</label>
+                <input type="text" id="new-colegio" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Tipo de Uniforme:</label>
+                <select id="new-tipo" class="form-control">
+                    <option value="Uniforme Diario">Uniforme Diario</option>
+                    <option value="Uniforme Deportivo">Uniforme Deportivo</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Prenda:</label>
+                <select id="new-prenda" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label>Talla:</label>
+                <select id="new-talla" class="form-control">
+                    <option value="4">4</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="10">10</option>
+                    <option value="12">12</option>
+                    <option value="14">14</option>
+                    <option value="16">16</option>
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Cantidad:</label>
+                <input type="number" id="new-cantidad" class="form-control">
+            </div>
+            <div class="modal-buttons">
+                <button id="save-product-btn" class="btn-primary">Guardar</button>
+                <button class="btn-secondary modal-close">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="update-stock-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Actualizar Stock</h2>
+            <div class="form-group">
+                <label>Colegio:</label>
+                <select id="update-colegio" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label>Tipo de Uniforme:</label>
+                <select id="update-tipo" class="form-control">
+                    <option value="Uniforme Diario">Uniforme Diario</option>
+                    <option value="Uniforme Deportivo">Uniforme Deportivo</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Prenda:</label>
+                <select id="update-prenda" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label>Talla:</label>
+                <select id="update-talla" class="form-control"></select>
+            </div>
+            <div class="form-group">
+                <label>Cantidad:</label>
+                <input type="number" id="update-cantidad" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Tipo de Movimiento:</label>
+                <div class="radio-group">
+                    <input type="radio" name="tipo-mov" value="ENTRADA" checked> Entrada
+                    <input type="radio" name="tipo-mov" value="SALIDA"> Salida
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="save-update-btn" class="btn-primary">Actualizar</button>
+                <button class="btn-secondary modal-close">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
