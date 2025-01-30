@@ -71,6 +71,7 @@ function createWindow() {
     });
 
     mainWindow.loadFile('index.html');
+    mainWindow.removeMenu();
 }
 
 app.whenReady().then(createWindow);
@@ -113,11 +114,19 @@ ipcMain.handle('get-inventory', () => {
 
 ipcMain.handle('add-product', (event, product) => {
     const inventory = readData(INVENTORY_FILE);
+    
+
+    // Verificar si el usuario es admin antes de permitir la operación
+    if (!isAdmin) {
+        return { success: false, message: 'No tiene permisos para realizar esta operación' };
+    }
+
     const productId = crypto
         .createHash('md5')
         .update(`${product.colegio}${product.tipoUniforme}${product.prenda}${product.talla}`)
         .digest('hex');
         
+
     if (inventory[productId]) {
         return { success: false, message: 'El producto ya existe' };
     }
@@ -150,4 +159,17 @@ ipcMain.handle('update-stock', (event, { productId, cantidad, tipo }) => {
         success: true, 
         message: `Stock actualizado. Nuevo stock: ${product.cantidad}` 
     };
+});
+
+ipcMain.handle('delete-product', (event, productId) => {
+    const inventory = readData(INVENTORY_FILE);
+    
+    if (!inventory[productId]) {
+        return { success: false };
+    }
+    
+    delete inventory[productId];
+    writeData(INVENTORY_FILE, inventory);
+    
+    return { success: true };
 });

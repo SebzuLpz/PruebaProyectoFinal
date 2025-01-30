@@ -1,5 +1,6 @@
 //renderer.js
 
+
 const { ipcRenderer } = require('electron');
 
 // DOM Elements
@@ -132,9 +133,11 @@ loginBtn.addEventListener('click', async (e) => {
             loginContainer.classList.add('hidden');
             mainContainer.classList.remove('hidden');
             
+            addProductBtn.classList.add('hidden'); // Primero ocultar para todos
             if (isAdmin) {
-                addProductBtn.classList.remove('hidden');
+                addProductBtn.classList.remove('hidden'); // Mostrar solo si es admin
             }
+
             
             await loadInventory();
             await updateColegiosList();
@@ -192,6 +195,9 @@ logoutBtn.addEventListener('click', () => {
     mainContainer.classList.add('hidden');
     loginContainer.classList.remove('hidden');
     
+    // Ocultar el botón de agregar producto
+    addProductBtn.classList.add('hidden');
+
     // Resetear todos los formularios
     document.querySelectorAll('form').forEach(form => form.reset());
     
@@ -223,6 +229,23 @@ async function loadInventory() {
 }
 
 // Actualizar tabla de productos
+//function updateProductsTable(products) {
+//    const tbody = document.getElementById('products-body');
+//    tbody.innerHTML = '';
+//    products.forEach(product => {
+//        const row = document.createElement('tr');
+//        row.innerHTML = `
+//            <td>${product.colegio}</td>
+//            <td>${product.tipoUniforme}</td>
+//            <td>${product.prenda}</td>
+//            <td>${product.talla}</td>
+//            <td>${product.cantidad}</td>
+//        `;
+//        tbody.appendChild(row);
+//    });
+//}
+
+
 function updateProductsTable(products) {
     const tbody = document.getElementById('products-body');
     tbody.innerHTML = '';
@@ -234,11 +257,31 @@ function updateProductsTable(products) {
             <td>${product.tipoUniforme}</td>
             <td>${product.prenda}</td>
             <td>${product.talla}</td>
-            <td>${product.cantidad}</td>
+            <td>${product.cantidad}${
+                isAdmin ? 
+                `<button class="delete-btn" data-id="${product.id}" 
+                    data-colegio="${product.colegio}"
+                    data-tipo="${product.tipoUniforme}"
+                    data-prenda="${product.prenda}"
+                    data-talla="${product.talla}">
+                    Eliminar
+                    </button>` : 
+                ''
+            }</td>
         `;
         tbody.appendChild(row);
     });
+
+    // Añadir event listeners para los botones de eliminar
+    if (isAdmin) {
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', showDeleteConfirmation);
+        });
+    }
 }
+
+
+
 
 // Actualizar lista de colegios
 async function updateColegiosList() {
@@ -482,3 +525,42 @@ function showNotification(message, duration = 3000) {
         }, 300); // tiempo de la animación
     }, duration);
 }
+
+
+
+
+
+function showDeleteConfirmation(event) {
+    const btn = event.currentTarget;
+    const modal = document.getElementById('delete-confirm-modal');
+    
+    // Guardar el ID del producto en el botón de confirmar
+    document.getElementById('confirm-delete-btn').dataset.productId = btn.dataset.id;
+    
+    // Mostrar detalles del producto
+    document.getElementById('delete-colegio').textContent = btn.dataset.colegio;
+    document.getElementById('delete-tipo').textContent = btn.dataset.tipo;
+    document.getElementById('delete-prenda').textContent = btn.dataset.prenda;
+    document.getElementById('delete-talla').textContent = btn.dataset.talla;
+    
+    modal.classList.remove('hidden');
+}
+
+document.getElementById('confirm-delete-btn').addEventListener('click', async function() {
+    const productId = this.dataset.productId;
+    
+    try {
+        const response = await ipcRenderer.invoke('delete-product', productId);
+        if (response.success) {
+            document.getElementById('delete-confirm-modal').classList.add('hidden');
+            showNotification('Producto eliminado exitosamente'); // Usando tu función de notificación
+            await loadInventory();
+            await updateColegiosList();
+        } else {
+            showNotification('Error: No se pudo eliminar el producto'); // Para errores
+        }
+    } catch (error) {
+        console.error('Error deleting product:', error);
+        showNotification('Error al eliminar el producto'); // Para excepciones
+    }
+});

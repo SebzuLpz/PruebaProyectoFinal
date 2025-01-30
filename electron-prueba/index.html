@@ -154,8 +154,28 @@
                 <button id="save-update-btn" class="btn-primary">Actualizar</button>
                 <button class="btn-secondary modal-close">Cancelar</button>
             </div>
+            
         </div>
     </div>
+    
+        <div id="delete-confirm-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Confirmar Eliminación</h2>
+                <p>¿Está seguro que desea eliminar este producto del inventario?</p>
+                <div class="product-details">
+                    <p><strong>Colegio:</strong> <span id="delete-colegio"></span></p>
+                    <p><strong>Tipo:</strong> <span id="delete-tipo"></span></p>
+                    <p><strong>Prenda:</strong> <span id="delete-prenda"></span></p>
+                    <p><strong>Talla:</strong> <span id="delete-talla"></span></p>
+                </div>
+                <div class="modal-buttons">
+                    <button id="confirm-delete-btn" class="btn-primary">Eliminar</button>
+                    <button class="btn-secondary modal-close">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    
+    
 
     <script src="renderer.js"></script>
 </body>

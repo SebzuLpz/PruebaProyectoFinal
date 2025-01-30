@@ -282,3 +282,32 @@ tr:hover {
 .notification.hiding {
     animation: slideOut 0.3s ease-in-out forwards;
 }
+
+
+
+.product-details {
+    background-color: #333;
+    padding: 15px;
+    border-radius: 4px;
+    margin: 15px 0;
+}
+
+.product-details p {
+    margin: 5px 0;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 50px;
+    align-items: center;
+    position: fixed;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
