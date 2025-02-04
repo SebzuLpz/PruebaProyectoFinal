@@ -1,0 +1,1 @@
+El tipo de inventario será **inventario perpetuo**, ya que permite mantener un orden más continuo sobre la disponibilidad de stock en almacén, te ayuda a generar un registro detallado de cada importe y la cantidad de productos que tiene la empresa.
