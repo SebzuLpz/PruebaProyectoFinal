@@ -2,13 +2,13 @@
 
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="UTF-8">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
     <link href="./styles.css" rel="stylesheet">
     <link rel="shortcut icon" href="./images/Ritmichell.png">
-    <title>Sistema de inventarios</title>
+    <title>Ritmichell - Gestión y control de productos</title>
     </head>
     <body>
     <div id="notification-container" class="notification-container"></div>
@@ -29,11 +29,13 @@
         <center><div id="error-message" class="error-message hidden"></div></center>
     </div>
 
-    <div id="main-container" class="container hidden">
+    <div id="main-container" class="container hidden scrollable-container">
         <div class="menu-bar">
             <div class="left-menu">
                 <button id="add-product-btn" class="btn-primary hidden">Agregar Producto</button>
                 <button id="update-stock-btn" class="btn-primary">Actualizar Stock</button>
+                <button id="cost-control-btn" class="btn-primary">Control de Costos</button>
+
             </div>
             <button id="logout-btn" class="btn-secondary">Cerrar Sesión</button>
         </div>
@@ -70,6 +72,76 @@
             </table>
         </div>
     </div>
+
+    <div id="cost-control-container" class="container hidden scrollable-container">
+        <div class="menu-bar">
+            <div class="left-menu">
+                <button id="back-to-inventory-btn" class="btn-primary">Volver a Inventario</button>
+            </div>
+            <button id="logout-from-cost-btn" class="btn-secondary">Cerrar Sesión</button>
+        </div>
+        
+        <h2>Control de Costos</h2>
+        
+        <div class="cost-filters">
+            <select id="cost-filter-colegio" class="form-control">
+                <option value="">Seleccionar Colegio</option>
+            </select>
+            <select id="cost-filter-tipo" class="form-control">
+                <option value="">Seleccionar Tipo</option>
+                <option value="Uniforme Diario">Uniforme Diario</option>
+                <option value="Uniforme Deportivo">Uniforme Deportivo</option>
+            </select>
+            <input type="month" id="cost-filter-month" class="form-control">
+        </div>
+        
+        <div class="cost-control-panel">
+            <div class="cost-input-form">
+                <h3>Registrar Costo</h3>
+                <div class="form-group">
+                    <label>Colegio:</label>
+                    <select id="cost-colegio" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo de Uniforme:</label>
+                    <select id="cost-tipo" class="form-control">
+                        <option value="Uniforme Diario">Uniforme Diario</option>
+                        <option value="Uniforme Deportivo">Uniforme Deportivo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mes y Año:</label>
+                    <input type="month" id="cost-month" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Costo Total:</label>
+                    <input type="number" id="cost-amount" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Descripción:</label>
+                    <textarea id="cost-description" class="form-control" rows="3"></textarea>
+                </div>
+                <button id="save-cost-btn" class="btn-primary">Guardar</button>
+            </div>
+            
+            <div class="cost-table">
+                <h3>Historial de Costos</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Colegio</th>
+                            <th>Tipo Uniforme</th>
+                            <th>Fecha</th>
+                            <th>Costo</th>
+                            <th>Descripción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="costs-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Modal templates -->
     <div id="add-product-modal" class="modal hidden">

@@ -1,59 +1,27 @@
+//main.js
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const fs = require('fs');
+const mysql = require('mysql');
 const crypto = require('crypto');
 
-// Definir rutas de archivos
-const USERS_FILE = path.join(__dirname, 'data', 'users.json');
-const INVENTORY_FILE = path.join(__dirname, 'data', 'inventory.json');
-
-// Asegurar que el directorio data existe
-if (!fs.existsSync(path.join(__dirname, 'data'))) {
-    fs.mkdirSync(path.join(__dirname, 'data'));
-}
-
-// Función para leer datos
-function readData(filePath) {
-    try {
-        if (fs.existsSync(filePath)) {
-            return JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        }
-        return {};
-    } catch (error) {
-        console.error(`Error reading file ${filePath}:`, error);
-        return {};
-    }
-}
-
-// Función para escribir datos
-function writeData(filePath, data) {
-    try {
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
-    } catch (error) {
-        console.error(`Error writing file ${filePath}:`, error);
-    }
-}
-
-// Inicializar usuarios por defecto si no existen
-const defaultUsers = {
-    admin: {
-        username: 'admin',
-        passwordHash: crypto.createHash('sha256').update('admin123').digest('hex'),
-        isAdmin: true
-    },
-    user: {
-        username: 'user',
-        passwordHash: crypto.createHash('sha256').update('user123').digest('hex'),
-        isAdmin: false
-    }
+// Configuración de la conexión a la base de datos
+const dbConfig = {
+    host: 'localhost',
+    user: 'root',
+    password: 'root',
+    database: 'ritmichell_db'
 };
 
-if (!fs.existsSync(USERS_FILE)) {
-    writeData(USERS_FILE, defaultUsers);
-}
-
-if (!fs.existsSync(INVENTORY_FILE)) {
-    writeData(INVENTORY_FILE, {});
+// Función para conectar a la base de datos
+function createConnection() {
+    const connection = mysql.createConnection(dbConfig);
+    connection.connect(err => {
+        if (err) {
+            console.error('Error connecting to database:', err.code);
+            console.error('Fatal:', err.fatal);
+        }
+    });
+    return connection;
 }
 
 function hashPassword(password) {
@@ -64,6 +32,7 @@ function createWindow() {
     const mainWindow = new BrowserWindow({
         width: 1000,
         height: 700,
+        icon: __dirname + '/images/Ritmichell.ico',
         webPreferences: {
             nodeIntegration: true,
             contextIsolation: false
@@ -88,88 +57,263 @@ app.on('activate', () => {
     }
 });
 
-// IPC handlers para operaciones de base de datos
-ipcMain.handle('login', (event, { username, password }) => {
-    const users = readData(USERS_FILE);
-    const user = users[username];
+// IPC handlers para operaciones con la base de datos
+ipcMain.handle('login', async (event, { username, password }) => {
+    const connection = createConnection();
     
-    if (!user) {
-        return { success: false, message: 'Usuario no encontrado' };
+    try {
+        const [rows] = await new Promise((resolve, reject) => {
+            connection.query(
+                'SELECT * FROM users WHERE username = ?', 
+                [username],
+                (error, results) => {
+                    if (error) reject(error);
+                    else resolve([results]);
+                }
+            );
+        });
+
+        if (rows.length === 0) {
+            return { success: false, message: 'Usuario no encontrado' };
+        }
+        
+        const user = rows[0];
+        const hashedPassword = hashPassword(password);
+        
+        if (user.password_hash === hashedPassword) {
+            return { 
+                success: true, 
+                message: 'Inicio de sesión exitoso',
+                isAdmin: user.is_admin === 1
+            };
+        }
+        
+        return { success: false, message: 'Contraseña incorrecta' };
+    } catch (error) {
+        console.error('Error en login:', error);
+        return { success: false, message: 'Error en la base de datos' };
+    } finally {
+        connection.end();
     }
+});
+
+ipcMain.handle('get-inventory', async () => {
+    const connection = createConnection();
     
-    if (user.passwordHash === hashPassword(password)) {
+    try {
+        const [rows] = await new Promise((resolve, reject) => {
+            connection.query(
+                'SELECT * FROM inventory',
+                (error, results) => {
+                    if (error) reject(error);
+                    else resolve([results]);
+                }
+            );
+        });
+        
+        // Convertir array de resultados a objeto con id como clave (igual al formato anterior)
+        const inventory = {};
+        rows.forEach(product => {
+            inventory[product.id] = {
+                id: product.id,
+                colegio: product.colegio,
+                tipoUniforme: product.tipo_uniforme,
+                prenda: product.prenda,
+                talla: product.talla,
+                cantidad: product.cantidad
+            };
+        });
+        
+        return inventory;
+    } catch (error) {
+        console.error('Error getting inventory:', error);
+        return {};
+    } finally {
+        connection.end();
+    }
+});
+
+ipcMain.handle('add-product', async (event, product) => {
+    const connection = createConnection();
+    
+    try {
+        // Generar ID del producto
+        const productId = crypto
+            .createHash('md5')
+            .update(`${product.colegio}${product.tipoUniforme}${product.prenda}${product.talla}`)
+            .digest('hex');
+        
+        // Verificar si el producto ya existe
+        const [existingProducts] = await new Promise((resolve, reject) => {
+            connection.query(
+                'SELECT * FROM inventory WHERE id = ?',
+                [productId],
+                (error, results) => {
+                    if (error) reject(error);
+                    else resolve([results]);
+                }
+            );
+        });
+        
+        if (existingProducts.length > 0) {
+            return { success: false, message: 'El producto ya existe' };
+        }
+        
+        // Insertar nuevo producto
+        await new Promise((resolve, reject) => {
+            connection.query(
+                'INSERT INTO inventory (id, colegio, tipo_uniforme, prenda, talla, cantidad) VALUES (?, ?, ?, ?, ?, ?)',
+                [productId, product.colegio, product.tipoUniforme, product.prenda, product.talla, product.cantidad],
+                (error) => {
+                    if (error) reject(error);
+                    else resolve();
+                }
+            );
+        });
+        
+        return { success: true, message: 'Producto agregado exitosamente' };
+    } catch (error) {
+        console.error('Error adding product:', error);
+        return { success: false, message: 'Error en la base de datos' };
+    } finally {
+        connection.end();
+    }
+});
+
+ipcMain.handle('update-stock', async (event, { productId, cantidad, tipo }) => {
+    const connection = createConnection();
+    
+    try {
+        // Obtener producto actual
+        const [products] = await new Promise((resolve, reject) => {
+            connection.query(
+                'SELECT * FROM inventory WHERE id = ?',
+                [productId],
+                (error, results) => {
+                    if (error) reject(error);
+                    else resolve([results]);
+                }
+            );
+        });
+        
+        if (products.length === 0) {
+            return { success: false, message: 'Producto no encontrado' };
+        }
+        
+        const product = products[0];
+        let newCantidad = product.cantidad;
+        
+        if (tipo === 'ENTRADA') {
+            newCantidad += parseInt(cantidad);
+        } else if (tipo === 'SALIDA') {
+            if (product.cantidad < cantidad) {
+                return { success: false, message: 'Stock insuficiente' };
+            }
+            newCantidad -= parseInt(cantidad);
+        }
+        
+        // Actualizar stock
+        await new Promise((resolve, reject) => {
+            connection.query(
+                'UPDATE inventory SET cantidad = ? WHERE id = ?',
+                [newCantidad, productId],
+                (error) => {
+                    if (error) reject(error);
+                    else resolve();
+                }
+            );
+        });
+        
         return { 
             success: true, 
-            message: 'Inicio de sesión exitoso',
-            isAdmin: user.isAdmin
+            message: `Stock actualizado. Nuevo stock: ${newCantidad}` 
         };
+    } catch (error) {
+        console.error('Error updating stock:', error);
+        return { success: false, message: 'Error en la base de datos' };
+    } finally {
+        connection.end();
     }
-    
-    return { success: false, message: 'Contraseña incorrecta' };
 });
 
-ipcMain.handle('get-inventory', () => {
-    return readData(INVENTORY_FILE);
-});
-
-ipcMain.handle('add-product', (event, product) => {
-    const inventory = readData(INVENTORY_FILE);
+ipcMain.handle('delete-product', async (event, productId) => {
+    const connection = createConnection();
     
-
-    // Verificar si el usuario es admin antes de permitir la operación
-    if (!isAdmin) {
-        return { success: false, message: 'No tiene permisos para realizar esta operación' };
-    }
-
-    const productId = crypto
-        .createHash('md5')
-        .update(`${product.colegio}${product.tipoUniforme}${product.prenda}${product.talla}`)
-        .digest('hex');
+    try {
+        await new Promise((resolve, reject) => {
+            connection.query(
+                'DELETE FROM inventory WHERE id = ?',
+                [productId],
+                (error, results) => {
+                    if (error) reject(error);
+                    else resolve(results);
+                }
+            );
+        });
         
-
-    if (inventory[productId]) {
-        return { success: false, message: 'El producto ya existe' };
-    }
-    
-    inventory[productId] = { ...product, id: productId };
-    writeData(INVENTORY_FILE, inventory);
-    return { success: true, message: 'Producto agregado exitosamente' };
-});
-
-ipcMain.handle('update-stock', (event, { productId, cantidad, tipo }) => {
-    const inventory = readData(INVENTORY_FILE);
-    const product = inventory[productId];
-    
-    if (!product) {
-        return { success: false, message: 'Producto no encontrado' };
-    }
-    
-    if (tipo === 'ENTRADA') {
-        product.cantidad += parseInt(cantidad);
-    } else if (tipo === 'SALIDA') {
-        if (product.cantidad < cantidad) {
-            return { success: false, message: 'Stock insuficiente' };
-        }
-        product.cantidad -= parseInt(cantidad);
-    }
-    
-    inventory[productId] = product;
-    writeData(INVENTORY_FILE, inventory);
-    return { 
-        success: true, 
-        message: `Stock actualizado. Nuevo stock: ${product.cantidad}` 
-    };
-});
-
-ipcMain.handle('delete-product', (event, productId) => {
-    const inventory = readData(INVENTORY_FILE);
-    
-    if (!inventory[productId]) {
+        return { success: true };
+    } catch (error) {
+        console.error('Error deleting product:', error);
         return { success: false };
+    } finally {
+        connection.end();
     }
+});
+
+
+// Add these handlers to the bottom of your main.js file
+
+// Handler to get all costs
+ipcMain.handle('get-costs', async () => {
+    const connection = createConnection();
     
-    delete inventory[productId];
-    writeData(INVENTORY_FILE, inventory);
+    try {
+        const [rows] = await new Promise((resolve, reject) => {
+            connection.query(
+                'SELECT * FROM costs ORDER BY month DESC',
+                (error, results) => {
+                    if (error) reject(error);
+                    else resolve([results]);
+                }
+            );
+        });
+        
+        return rows;
+    } catch (error) {
+        console.error('Error getting costs:', error);
+        return [];
+    } finally {
+        connection.end();
+    }
+});
+
+// Handler to add a new cost
+ipcMain.handle('add-cost', async (event, costData) => {
+    const connection = createConnection();
     
-    return { success: true };
+    try {
+        await new Promise((resolve, reject) => {
+            connection.query(
+                'INSERT INTO costs (colegio, tipo_uniforme, month, amount, description) VALUES (?, ?, ?, ?, ?)',
+                [
+                    costData.colegio, 
+                    costData.tipoUniforme, 
+                    costData.month, 
+                    costData.amount, 
+                    costData.description
+                ],
+                (error) => {
+                    if (error) reject(error);
+                    else resolve();
+                }
+            );
+        });
+        
+        return { success: true, message: 'Costo registrado exitosamente' };
+    } catch (error) {
+        console.error('Error adding cost:', error);
+        return { success: false, message: 'Error en la base de datos' };
+    } finally {
+        connection.end();
+    }
 });

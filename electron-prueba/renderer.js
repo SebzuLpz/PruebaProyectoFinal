@@ -23,6 +23,10 @@ let isLoggingIn = false;
 
 let isAdmin = false;
 
+
+
+
+
 // Función para resetear el formulario de login
 //function resetLoginForm() {
 //    usernameInput.value = '';
@@ -133,6 +137,13 @@ loginBtn.addEventListener('click', async (e) => {
             loginContainer.classList.add('hidden');
             mainContainer.classList.remove('hidden');
             
+            setTimeout(() => {
+                loginContainer.classList.add('hidden'); // Ocultar después de la animación
+                mainContainer.classList.remove('hidden'); // Mostrar el contenedor principal
+                mainContainer.classList.add('slide-in2'); // Aplicar animación de entrada
+            }, ); // Esperar a que termine la animación de deslizamiento
+        
+            
             addProductBtn.classList.add('hidden'); // Primero ocultar para todos
             if (isAdmin) {
                 addProductBtn.classList.remove('hidden'); // Mostrar solo si es admin
@@ -192,8 +203,16 @@ function resetModal(modalId) {
 
 // Logout functionality
 logoutBtn.addEventListener('click', () => {
-    mainContainer.classList.add('hidden');
+    setTimeout(() => {
+        
+        loginContainer.classList.add('slide-in2');
+         // Ocultar después de la animación
+        mainContainer.classList.remove('slide-in2'); // Mostrar el contenedor principal
+        
+    }, ); // Esperar a que termine la animación de deslizamiento
     loginContainer.classList.remove('hidden');
+    mainContainer.classList.add('hidden');
+    
     
     // Ocultar el botón de agregar producto
     addProductBtn.classList.add('hidden');
@@ -213,6 +232,8 @@ logoutBtn.addEventListener('click', () => {
     resetModal('add-product-modal');
     resetModal('update-stock-modal');
     
+    
+
     isAdmin = false;
     isLoggingIn = false;
 });
@@ -315,13 +336,6 @@ async function updateColegiosList() {
 
 // Event listeners para modales
 
-document.querySelectorAll('.modal-close').forEach(button => {
-    button.addEventListener('click', () => {
-        const modal = button.closest('.modal');
-        modal.classList.add('hidden');
-        resetModal(modal.id);
-    });
-});
 
 //document.querySelectorAll('.modal-close').forEach(button => {
 //    button.addEventListener('click', () => {
@@ -359,6 +373,24 @@ updateStockBtn.addEventListener('click', () => {
     updatePrendasList('update-tipo', 'update-prenda');
     updateTallasSelect('update-talla'); // Actualizar lista de tallas
 });
+
+
+// Cerrar modales
+document.querySelectorAll('.modal-close').forEach(button => {
+    button.addEventListener('click', () => {
+        const modal = button.closest('.modal');
+        modal.classList.add('popup-out'); // Aplicar animación de salida
+        modal.classList.add('hidden');
+        setTimeout(() => {
+        
+            modal.classList.remove('popup-out') 
+            
+        }, 300);
+        
+    });
+});
+
+
 
 // Actualizar lista de prendas según el tipo de uniforme
 function updatePrendasList(tipoSelectId, prendaSelectId) {
@@ -562,5 +594,320 @@ document.getElementById('confirm-delete-btn').addEventListener('click', async fu
     } catch (error) {
         console.error('Error deleting product:', error);
         showNotification('Error al eliminar el producto'); // Para excepciones
+    }
+});
+
+
+
+// Add these as new DOM Elements
+const costControlBtn = document.getElementById('cost-control-btn');
+const costControlContainer = document.getElementById('cost-control-container');
+const backToInventoryBtn = document.getElementById('back-to-inventory-btn');
+const logoutFromCostBtn = document.getElementById('logout-from-cost-btn');
+const saveCostBtn = document.getElementById('save-cost-btn');
+
+// Event listener for the "Control de Costos" button
+costControlBtn.addEventListener('click', () => {
+    mainContainer.classList.add('hidden');
+    costControlContainer.classList.remove('hidden');
+
+    setTimeout(() => {
+
+        mainContainer.classList.add('hidden');
+// Aplicar animación de entrada
+        costControlContainer.classList.remove('hidden'); // Mostrar el contenedor principal
+        costControlContainer.classList.add('slide-in2');
+
+    }, ); // Esperar a que termine la animación de deslizamiento
+
+    loadCostData();
+    updateColegiosListForCost();
+    
+});
+
+// Event listener for the "Volver a Inventario" button
+backToInventoryBtn.addEventListener('click', () => {
+    costControlContainer.classList.add('hidden');
+    mainContainer.classList.remove('hidden');
+    costControlContainer.classList.add('slide-out2');
+
+    setTimeout (()=> {
+        costControlContainer.classList.remove('slide-out2');
+        costControlContainer.classList.add('hidden');
+
+        mainContainer.classList.remove('hidden');
+    },);
+
+
+
+    loadInventory(); // Reload inventory data when returning
+    
+});
+
+// Event listener for the "Cerrar Sesión" button in cost control
+logoutFromCostBtn.addEventListener('click', () => {
+    setTimeout(() => {
+        
+        loginContainer.classList.add('slide-in2');
+         // Ocultar después de la animación
+        mainContainer.classList.remove('slide-in2'); // Mostrar el contenedor principal
+        
+    }, 100);
+    costControlContainer.classList.add('hidden');
+    loginContainer.classList.remove('hidden');
+    
+    
+    // Reset all forms
+    document.querySelectorAll('form').forEach(form => form.reset());
+    
+    // Reset and enable all inputs and selects
+    document.querySelectorAll('input, select, textarea').forEach(element => {
+        element.disabled = false;
+        if (element.type !== 'radio') {
+            element.value = '';
+        }
+    });
+    
+    isAdmin = false;
+    isLoggingIn = false;
+});
+
+// Function to update colegios list for cost control
+async function updateColegiosListForCost() {
+    try {
+        const inventory = await ipcRenderer.invoke('get-inventory');
+        const colegios = new Set(Object.values(inventory).map(p => p.colegio));
+        
+        const costColegioSelect = document.getElementById('cost-colegio');
+        const costFilterColegioSelect = document.getElementById('cost-filter-colegio');
+        
+        [costColegioSelect, costFilterColegioSelect].forEach(select => {
+            if (select) {
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">Seleccionar Colegio</option>';
+                colegios.forEach(colegio => {
+                    const option = document.createElement('option');
+                    option.value = colegio;
+                    option.textContent = colegio;
+                    select.appendChild(option);
+                });
+                select.value = currentValue;
+            }
+        });
+    } catch (error) {
+        console.error('Error updating colegios list for cost:', error);
+    }
+}
+
+// Function to load cost data
+async function loadCostData() {
+    try {
+        const costs = await ipcRenderer.invoke('get-costs');
+        updateCostsTable(costs);
+    } catch (error) {
+        console.error('Error loading cost data:', error);
+        showNotification('Error al cargar datos de costos');
+    }
+}
+
+// Function to update costs table
+function updateCostsTable(costs) {
+    const tbody = document.getElementById('costs-body');
+    tbody.innerHTML = '';
+    
+    costs.forEach(cost => {
+        const row = document.createElement('tr');
+        
+        // Format date from YYYY-MM to MM/YYYY
+        const dateParts = cost.month.split('-');
+        const formattedDate = dateParts[1] + '/' + dateParts[0];
+        
+        row.innerHTML = `
+            <td>${cost.colegio}</td>
+            <td>${cost.tipo_uniforme}</td>
+            <td>${formattedDate}</td>
+            <td>$${cost.amount.toFixed(2)}</td>
+            <td>${cost.description}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Event listener for save cost button
+saveCostBtn.addEventListener('click', async () => {
+    const costData = {
+        colegio: document.getElementById('cost-colegio').value,
+        tipoUniforme: document.getElementById('cost-tipo').value,
+        month: document.getElementById('cost-month').value,
+        amount: parseFloat(document.getElementById('cost-amount').value),
+        description: document.getElementById('cost-description').value
+    };
+    
+    if (!costData.colegio || !costData.tipoUniforme || !costData.month || isNaN(costData.amount)) {
+        showNotification('Por favor complete todos los campos correctamente');
+        return;
+    }
+    
+    try {
+        const response = await ipcRenderer.invoke('add-cost', costData);
+        if (response.success) {
+            showNotification(response.message);
+            
+            // Clear form
+            document.getElementById('cost-colegio').value = '';
+            document.getElementById('cost-tipo').value = 'Uniforme Diario';
+            document.getElementById('cost-month').value = '';
+            document.getElementById('cost-amount').value = '';
+            document.getElementById('cost-description').value = '';
+            
+            // Reload cost data
+            loadCostData();
+        } else {
+            showNotification(response.message);
+        }
+    } catch (error) {
+        console.error('Error adding cost:', error);
+        showNotification('Error al guardar el costo');
+    }
+});
+
+// Event listeners for cost filters
+['cost-filter-colegio', 'cost-filter-tipo', 'cost-filter-month'].forEach(filterId => {
+    document.getElementById(filterId).addEventListener('change', async () => {
+        try {
+            const costs = await ipcRenderer.invoke('get-costs');
+            let filteredCosts = costs;
+            
+            const filters = {
+                colegio: document.getElementById('cost-filter-colegio').value,
+                tipo_uniforme: document.getElementById('cost-filter-tipo').value,
+                month: document.getElementById('cost-filter-month').value
+            };
+            
+            Object.keys(filters).forEach(key => {
+                if (filters[key]) {
+                    filteredCosts = filteredCosts.filter(cost => 
+                        cost[key] === filters[key]
+                    );
+                }
+            });
+            
+            updateCostsTable(filteredCosts);
+        } catch (error) {
+            console.error('Error filtering costs:', error);
+        }
+    });
+});
+
+
+// Cerrar modales con la tecla "Esc"
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.classList.add('hidden');
+        
+        setTimeout(() => {
+            modal.classList.add('popup-out'); // Aplicar animación de salida
+            modal.classList.add('hidden'); // Ocultar el modal después de la animación
+            modal.classList.remove('popup-out'); // Limpiar la clase de animación
+        },); // Esperar a que termine la animación de salida
+            resetModal(modal.id);
+        });
+    }
+});
+
+// Confirmar agregar producto con "Enter"
+document.getElementById('new-cantidad').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        document.getElementById('save-product-btn').click();
+    }
+});
+
+// Confirmar actualizar stock con "Enter"
+document.getElementById('update-cantidad').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        document.getElementById('save-update-btn').click();
+    }
+});
+
+
+// Mostrar modal de agregar producto
+addProductBtn.addEventListener('click', () => {
+    const modal = document.getElementById('add-product-modal');
+    modal.classList.remove('hidden'); // Mostrar el modal
+    modal.classList.add('popup-in'); // Aplicar animación de entrada
+});
+
+// Mostrar modal de actualizar stock
+updateStockBtn.addEventListener('click', () => {
+    const modal = document.getElementById('update-stock-modal');
+    modal.classList.remove('hidden'); // Mostrar el modal
+    modal.classList.add('popup-in'); // Aplicar animación de entrada
+});
+
+
+// Cerrar modales al hacer clic en el botón de cerrar
+document.querySelectorAll('.modal-close').forEach(button => {
+    button.addEventListener('click', () => {
+        const modal = button.closest('.modal');
+        modal.classList.add('popup-out'); // Aplicar animación de salida
+        setTimeout(() => {
+            modal.classList.add('hidden'); // Ocultar el modal después de la animación
+            modal.classList.remove('popup-out'); // Limpiar la clase de animación
+        }, 300); // Esperar a que termine la animación de salida
+        closeModal(modal); // Llamar a la función para cerrar el modal
+    });
+});
+
+// Cerrar modales al presionar la tecla "Esc"
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        const openModal = document.querySelector('.modal:not(.hidden)'); // Buscar el modal visible
+        if (openModal) {
+            modal.classList.add('popup-out'); // Aplicar animación de salida
+            setTimeout(() => {
+                modal.classList.add('hidden'); // Ocultar el modal después de la animación
+                modal.classList.remove('popup-out'); // Limpiar la clase de animación
+            }, 300); // Esperar a que termine la animación de salida
+            closeModal(openModal); // Cerrar el modal visible
+        }
+    }
+});
+
+// Función para cerrar el modal con animación
+function closeModal(modal) {
+    modal.classList.add('popup-out'); // Aplicar animación de salida
+    setTimeout(() => {
+        modal.classList.add('hidden'); // Ocultar el modal después de la animación
+        modal.classList.remove('popup-out'); // Limpiar la clase de animación
+    }, 300); // Esperar a que termine la animación de salida
+}
+
+
+// Suponiendo que tienes un objeto que mapea tipos de uniforme a prendas
+const prendasPorTipo = {
+    "Uniforme Diario": ["Camisa", "Pantalón", "Falda"],
+    "Uniforme Deportivo": ["Camiseta", "Short", "Sudadera"]
+};
+
+// Obtener elementos de los filtros
+const tipoUniformeSelect = document.getElementById('filter-tipo');
+const prendaSelect = document.getElementById('filter-prenda');
+
+// Evento para actualizar las opciones de prenda al seleccionar un tipo de uniforme
+tipoUniformeSelect.addEventListener('change', () => {
+    const tipoSeleccionado = tipoUniformeSelect.value;
+    // Limpiar las opciones actuales de prenda
+    prendaSelect.innerHTML = '';
+
+    if (tipoSeleccionado && prendasPorTipo[tipoSeleccionado]) {
+        // Obtener las prendas correspondientes al tipo seleccionado
+        const prendas = prendasPorTipo[tipoSeleccionado];
+        prendas.forEach(prenda => {
+            const option = document.createElement('option');
+            option.value = prenda;
+            option.textContent = prenda;
+            prendaSelect.appendChild(option);
+        });
     }
 });

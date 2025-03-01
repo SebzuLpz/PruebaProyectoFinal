@@ -311,3 +311,144 @@ tr:hover {
 .delete-btn:hover {
     background-color: #c82333;
 }
+
+
+/* Add these to your styles.css file */
+
+.cost-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.cost-control-panel {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
+}
+
+.cost-input-form {
+    background-color: #2d2d2d;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.cost-table {
+    background-color: #2d2d2d;
+    border-radius: 8px;
+    padding: 20px;
+    overflow-x: auto;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Responsive styles */
+@media (max-width: 992px) {
+    .cost-control-panel {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .cost-filters {
+        flex-direction: column;
+    }
+}
+
+
+/* Animación de deslizamiento hacia la izquierda */
+.slide-in2 {
+    animation: slideIn2 0.2s forwards;
+}
+
+.slide-out2 {
+    animation: slideOut2 0.2s forwards;
+}
+
+@keyframes slideIn2 {
+    from {
+        transform: translateX(100%); /* Comienza fuera de la pantalla a la derecha */
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0); /* Termina en su posición original */
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut2 {
+    from {
+        transform: translateX(0); /* Comienza en su posición original */
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%); /* Se desliza fuera de la pantalla a la izquierda */
+        opacity: 0;
+    }
+}
+
+/* Ocultar las barras de desplazamiento en todos los navegadores */
+body {
+    overflow: hidden; /* Esto oculta las barras de desplazamiento en el cuerpo */
+}
+
+/* Para navegadores WebKit (Chrome, Safari) */
+body::-webkit-scrollbar {
+    display: none; /* Oculta la barra de desplazamiento */
+}
+
+/* Para Firefox */
+body {
+    scrollbar-width: none; /* Oculta la barra de desplazamiento */
+}
+
+/* Para IE y Edge */
+body {
+    -ms-overflow-style: none; /* Oculta la barra de desplazamiento */
+}
+
+/* Si deseas que un contenedor específico tenga desplazamiento sin mostrar la barra */
+.scrollable-container {
+    overflow: auto; /* Permite el desplazamiento */
+    scrollbar-width: none; /* Para Firefox */
+}
+
+/* Para navegadores WebKit (Chrome, Safari) */
+.scrollable-container::-webkit-scrollbar {
+    display: none; /* Oculta la barra de desplazamiento */
+}
+
+
+/* Animación de pop-up */
+.popup-in {
+    animation: popupIn 0.2s forwards;
+}
+
+.popup-out {
+    animation: popupOut 0.2s forwards;
+}
+
+@keyframes popupIn {
+    from {
+        transform: scale(0); /* Comienza desde un tamaño pequeño */
+        opacity: 0; /* Comienza invisible */
+    }
+    to {
+        transform: scale(1); /* Termina en su tamaño original */
+        opacity: 1; /* Termina visible */
+    }
+}
+
+@keyframes popupOut {
+    from {
+        transform: scale(1); /* Comienza en su tamaño original */
+        opacity: 1; /* Comienza visible */
+    }
+    to {
+        transform: scale(0); /* Termina en un tamaño pequeño */
+        opacity: 0; /* Termina invisible */
+    }
+}
